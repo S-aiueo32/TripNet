@@ -4,7 +4,7 @@ TripNet is a feature extraction network for fashion images.
 In a training, we use 3 networks sharing their parameters and triplet image sets.
 Learning through triplet loss, we gain the parameters.
 After the training, TripNet simply works as a vectorizer.
-it is the implementation with Python+TensorFlow.
+Here is the implementation with Python+TensorFlow.
 
 ## Requirements
 Our environment is built on Windows 10 with Anaconda.
@@ -25,6 +25,7 @@ $ python main.py --train --data_list <DATA_LIST_OF_TRIPLET> --data_dir <IMAGES_D
 To visualize with TensorBoard's Embedding Projector:
 ```
 $ python main.py --visualize --data_dir <IMAGES_DIRECTORY>
+$ tensorboard --logdir ./projector
 ```
 If you want to specify detail, run `python main.py --help` and check the arguments.
 
