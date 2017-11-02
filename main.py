@@ -38,11 +38,9 @@ def main(_):
 
         if FLAGS.train:
             tripnet.train()
-        else:
-          if not tf.train.get_checkpoint_state(FLAGS.ckpt_dir):
-            raise Exception("[!] Train a model first, then run test mode")
-
         if FLAGS.visualize:
+            if not tf.train.get_checkpoint_state(FLAGS.ckpt_dir):
+                raise Exception("[!] Train a model first, then run test mode")
             if not FLAGS.train:
                 tripnet.load(FLAGS.load_step)
             tripnet.visualize()

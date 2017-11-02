@@ -27,7 +27,6 @@ class TripNet(object):
         self.data_dir = data_dir
         self.log_dir = log_dir
         self.ckpt_dir = ckpt_dir
-
         self.visualize_dir = visualize_dir
 
         # Shared Network Parameters
@@ -71,6 +70,9 @@ class TripNet(object):
         self.x_q = tf.placeholder(tf.float32, [None, 294912])
         self.f_q = self.build_model(self.x_q, scope="query")
 
+        vars_save = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+        print(tf.get_collection(tf.GraphKeys.UPDATE_OPS))
+        
         if train:
             self.x_p = tf.placeholder(tf.float32, [None, 294912])
             self.f_p = self.build_model(self.x_p, scope="positive")
@@ -78,14 +80,8 @@ class TripNet(object):
             self.f_n = self.build_model(self.x_n, scope="negative")
             self.loss, self.d_p, self.d_n = self.triplet_loss(
                 self.f_q, self.f_p, self.f_n)
-
             self.summary = tf.summary.merge_all()
 
-        vars_share = tf.get_collection(
-            tf.GraphKeys.GLOBAL_VARIABLES, scope='share')
-        vars_query = tf.get_collection(
-            tf.GraphKeys.GLOBAL_VARIABLES, scope='query')
-        vars_save = list(set(vars_share).union(set(vars_query)))
         self.saver = tf.train.Saver(vars_save, max_to_keep=None)
         self.sess.run(tf.global_variables_initializer())
 
@@ -167,7 +163,7 @@ class TripNet(object):
         d_p = tf.reduce_sum(tf.square(f_q -
                                       f_p), 1)
         d_n = tf.reduce_sum(tf.square(f_q - f_n), 1)
-        triplet_loss = tf.reduce_mean(tf.maximum(0., 0.2 + d_p - d_n))
+        triplet_loss = tf.reduce_mean(tf.maximum(0., margin + d_p - d_n))
         tf.summary.scalar("D_p", tf.reduce_mean(d_p))
         tf.summary.scalar("D_n", tf.reduce_mean(d_n))
         tf.summary.scalar("Loss", triplet_loss)
