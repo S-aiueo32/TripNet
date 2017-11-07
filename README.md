@@ -1,9 +1,9 @@
 # TripNet
 ## Abstract
 TripNet is a feature extraction network for fashion images.
-In a training, we use 3 networks sharing their parameters and triplet image sets.
-Learning through triplet loss, we gain the parameters.
-After the training, TripNet simply works as a vectorizer.
+In training, we use triplet image sets and 3 networks sharing their parameters.
+Minimize the triplet loss, we learn the parameters.
+After training, TripNet simply works as a vectorizer.
 Here is the implementation with Python+TensorFlow.
 
 ## Requirements
