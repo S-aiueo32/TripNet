@@ -12,10 +12,10 @@ TripNet requires below:
 
 * Python 3.5
 * TensorFlow 1.1 or 1.3
-* OpenCV3 (Get with `conda install -c menpo opencv` or `pip install opencv-python`)
+* OpenCV3 (Get it with `conda install -c menpo opencv3` or `pip install opencv-python`)
 * any other packages (Please install them using `pip`)
 
-Maybe, you can also run it on Linux, Macintosh and so on if the requirements is met.
+If the requirements is met, maybe you can also run it on the other platforms.
 
 ## Usage
 Run the training first:
