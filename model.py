@@ -72,7 +72,7 @@ class TripNet(object):
 
         vars_save = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
         print(tf.get_collection(tf.GraphKeys.UPDATE_OPS))
-        
+
         if train:
             self.x_p = tf.placeholder(tf.float32, [None, 294912])
             self.f_p = self.build_model(self.x_p, scope="positive")
@@ -141,12 +141,13 @@ class TripNet(object):
                 end = start + self.batch_size if start + \
                     self.batch_size <= data_num else data_num
                 for path in dataset[start:end]:
+                    #print(path[0],path[1],path[2])
                     img_q = np.append(img_q, np.reshape(cv2.imread(
-                        os.path.join(self.data_dir, path[0])), (1, -1,)), axis=0)
+                        os.path.join(self.data_dir, path[0])), (1, -1)), axis=0)
                     img_p = np.append(img_p, np.reshape(cv2.imread(
-                        os.path.join(self.data_dir, path[1])), (1, -1,)), axis=0)
+                        os.path.join(self.data_dir, path[1])), (1, -1)), axis=0)
                     img_n = np.append(img_n, np.reshape(cv2.imread(
-                        os.path.join(self.data_dir, path[2])), (1, -1,)), axis=0)
+                        os.path.join(self.data_dir, path[2])), (1, -1)), axis=0)
 
                 _, train_summary = self.sess.run([train_step, self.summary], feed_dict={
                     self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})
@@ -160,14 +161,17 @@ class TripNet(object):
             self.save(self.ckpt_dir, step)
 
     def triplet_loss(self, f_q, f_p, f_n, margin=0.2):
-        d_p = tf.reduce_sum(tf.square(f_q -
-                                      f_p), 1)
+        # compute loss
+        d_p = tf.reduce_sum(tf.square(f_q - f_p), 1)
         d_n = tf.reduce_sum(tf.square(f_q - f_n), 1)
         triplet_loss = tf.reduce_mean(tf.maximum(0., margin + d_p - d_n))
-        tf.summary.scalar("D_p", tf.reduce_mean(d_p))
-        tf.summary.scalar("D_n", tf.reduce_mean(d_n))
+        # logging
+        d_p = tf.reduce_mean(d_p)
+        d_n = tf.reduce_mean(d_n)
+        tf.summary.scalar("D_p", d_p)
+        tf.summary.scalar("D_n", d_n)
         tf.summary.scalar("Loss", triplet_loss)
-        return triplet_loss, tf.reduce_mean(d_p), tf.reduce_mean(d_n)
+        return triplet_loss, d_p, d_n
 
     def save(self, ckpt_dir, step):
         model_name = "TripNet.model"
