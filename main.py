@@ -24,6 +24,9 @@ FLAGS = flags.FLAGS
 
 
 def main(_):
+    if FLAGS.train and FLAGS.visualize:
+        raise Exception("[!] You cannot run training and visualizing at the same time.")
+
     with tf.Session() as sess:
         tripnet = TripNet(
             sess,
@@ -40,9 +43,8 @@ def main(_):
             tripnet.train()
         if FLAGS.visualize:
             if not tf.train.get_checkpoint_state(FLAGS.ckpt_dir):
-                raise Exception("[!] Train a model first, then run test mode")
-            if not FLAGS.train:
-                tripnet.load(FLAGS.load_step)
+                raise Exception("[!] Train a model first, then run test mode.")
+            tripnet.load(FLAGS.load_step)
             tripnet.visualize()
 
 

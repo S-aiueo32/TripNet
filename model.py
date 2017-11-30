@@ -68,10 +68,9 @@ class TripNet(object):
                 self.b_fc = bias_variable([128], name="bias")
 
         self.x_q = tf.placeholder(tf.float32, [None, 294912])
-        self.f_q = self.build_model(self.x_q, scope="query")
+        self.f_q = self.build_model(self.x_q, train=train, scope="query")
 
-        vars_save = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-        print(tf.get_collection(tf.GraphKeys.UPDATE_OPS))
+        self.vars_save = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
         if train:
             self.x_p = tf.placeholder(tf.float32, [None, 294912])
@@ -82,10 +81,10 @@ class TripNet(object):
                 self.f_q, self.f_p, self.f_n)
             self.summary = tf.summary.merge_all()
 
-        self.saver = tf.train.Saver(vars_save, max_to_keep=None)
+        self.saver = tf.train.Saver(self.vars_save, max_to_keep=None)
         self.sess.run(tf.global_variables_initializer())
 
-    def build_model(self, x, scope=None):
+    def build_model(self, x, train=True, scope=None):
         with tf.name_scope(scope):
             xr = tf.reshape(x, [-1, 256, 384, 3])
             # 1st convolution layer
@@ -96,7 +95,8 @@ class TripNet(object):
             # 2nd convolution layer
             h_cv2_pool = max_pool_4x4(h_cv1_drop)
             with tf.variable_scope(scope):
-                h_cv2_bn = batch_norm(h_cv2_pool, name="bn2")
+                h_cv2_bn = batch_norm(
+                    h_cv2_pool, name="bn2", trainable=train, is_training=train)
             h_cv2_1 = tf.nn.relu(
                 conv2d(h_cv2_bn, self.W_conv2_1) + self.b_conv2_1)
             h_cv2_2 = tf.nn.relu(
@@ -105,7 +105,8 @@ class TripNet(object):
             # 3rd convolution layer
             h_cv3_pool = max_pool_4x4(h_cv2_drop)
             with tf.variable_scope(scope):
-                h_cv3_bn = batch_norm(h_cv3_pool, name="bn3")
+                h_cv3_bn = batch_norm(
+                    h_cv3_pool, name="bn3", trainable=train, is_training=train)
             h_cv3_1 = tf.nn.relu(
                 conv2d(h_cv3_bn, self.W_conv3_1) + self.b_conv3_1)
             h_cv3_2 = tf.nn.relu(
@@ -114,7 +115,8 @@ class TripNet(object):
             # 4th convolution layer
             h_cv4_pool = max_pool_4x4(h_cv3_drop)
             with tf.variable_scope(scope):
-                h_cv4_bn = batch_norm(h_cv4_pool, name="bn4")
+                h_cv4_bn = batch_norm(
+                    h_cv4_pool, name="bn4", trainable=train, is_training=train)
             h_cv4_1 = tf.nn.relu(
                 conv2d(h_cv4_bn, self.W_conv4_1) + self.b_conv4_1)
             h_cv4_f = tf.reshape(h_cv4_1, [-1, 6 * 4 * 128])
@@ -141,7 +143,7 @@ class TripNet(object):
                 end = start + self.batch_size if start + \
                     self.batch_size <= data_num else data_num
                 for path in dataset[start:end]:
-                    #print(path[0],path[1],path[2])
+                    # print(path[0],path[1],path[2])
                     img_q = np.append(img_q, np.reshape(cv2.imread(
                         os.path.join(self.data_dir, path[0])), (1, -1)), axis=0)
                     img_p = np.append(img_p, np.reshape(cv2.imread(
@@ -149,9 +151,11 @@ class TripNet(object):
                     img_n = np.append(img_n, np.reshape(cv2.imread(
                         os.path.join(self.data_dir, path[2])), (1, -1)), axis=0)
 
-                _, train_summary = self.sess.run([train_step, self.summary], feed_dict={
-                    self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})
-                writer.add_summary(train_summary, step)
+                update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                with tf.control_dependencies(update_ops):
+                    _, train_summary = self.sess.run([train_step, self.summary], feed_dict={
+                        self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})
+                    writer.add_summary(train_summary, step)
 
                 loss, d_p, d_n = self.sess.run([self.loss, self.d_p, self.d_n], feed_dict={
                                                self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})

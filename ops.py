@@ -29,7 +29,6 @@ def bias_variable(shape, name=None):
 def batch_norm(x, name, reuse=False, is_training=True, trainable=True):
     return tf.contrib.layers.batch_norm(x,
                                         decay=0.9,
-                                        updates_collections=None,
                                         epsilon=1e-5,
                                         scale=True,
                                         is_training=is_training,
