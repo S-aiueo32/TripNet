@@ -128,6 +128,7 @@ class TripNet(object):
     def train(self):
         train_step = tf.train.AdamOptimizer().minimize(self.loss)
 
+        os.remove(self.log_dir)
         writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
