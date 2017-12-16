@@ -132,12 +132,12 @@ class TripNet(object):
         self.sess.run(tf.global_variables_initializer())
 
         dataset = np.loadtxt(self.data_list, delimiter=",", dtype='unicode')
-        np.random.shuffle(dataset)
         data_num = len(dataset)
         batch_num = int(np.ceil(data_num / self.batch_size))
 
         step = 0
         for epoch in range(self.epoch):
+            np.random.shuffle(dataset)
             for batch in range(batch_num):
                 img_q = img_p = img_n = np.empty((0, 294912))
                 start = self.batch_size * batch
