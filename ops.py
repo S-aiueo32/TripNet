@@ -31,6 +31,7 @@ def batch_norm(x, name, reuse=False, is_training=True, trainable=True):
                                         decay=0.9,
                                         epsilon=1e-5,
                                         scale=True,
+                                        updates_collections=None,
                                         is_training=is_training,
                                         trainable=trainable,
                                         reuse=reuse,

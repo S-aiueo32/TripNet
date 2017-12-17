@@ -71,7 +71,7 @@ class TripNet(object):
         self.f_q = self.build_model(self.x_q, train=train, scope="query")
 
         self.vars_save = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-        self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        #self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         if train:
             self.x_p = tf.placeholder(tf.float32, [None, 294912])
@@ -87,7 +87,7 @@ class TripNet(object):
 
     def build_model(self, x, train=True, scope=None):
         with tf.name_scope(scope):
-            xr = tf.reshape(x, [-1, 384, 256, 3]) #サイズ調整
+            xr = tf.reshape(x, [-1, 384, 256, 3])  # サイズ調整
             # 1st convolution layer
             h_cv1_1 = tf.nn.relu(conv2d(xr, self.W_conv1_1) + self.b_conv1_1)
             h_cv1_2 = tf.nn.relu(
@@ -128,7 +128,9 @@ class TripNet(object):
     def train(self):
         train_step = tf.train.AdamOptimizer().minimize(self.loss)
 
-        os.remove(self.log_dir)
+        old_logs = glob.glob(self.log_dir + '*.*')
+        for log in old_logs:
+            os.remove(log)
         writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
@@ -145,7 +147,7 @@ class TripNet(object):
                 end = start + self.batch_size if start + \
                     self.batch_size <= data_num else data_num
                 for path in dataset[start:end]:
-                    #print(path[0],path[1],path[2])
+                    # print(path[0],path[1],path[2])
                     img_q = np.append(img_q, np.reshape(cv2.imread(
                         os.path.join(self.data_dir, path[0])), (1, -1)), axis=0)
                     img_p = np.append(img_p, np.reshape(cv2.imread(
@@ -153,9 +155,9 @@ class TripNet(object):
                     img_n = np.append(img_n, np.reshape(cv2.imread(
                         os.path.join(self.data_dir, path[2])), (1, -1)), axis=0)
 
-                with tf.control_dependencies(self.update_ops):
-                    _, train_summary = self.sess.run([train_step, self.summary], feed_dict={
-                        self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})
+                #with tf.control_dependencies(self.update_ops):
+                _, train_summary = self.sess.run([train_step, self.summary], feed_dict={
+                    self.x_q: img_q, self.x_p: img_p, self.x_n: img_n})
                 writer.add_summary(train_summary, step)
 
                 loss, d_p, d_n = self.sess.run([self.loss, self.d_p, self.d_n], feed_dict={
@@ -167,16 +169,16 @@ class TripNet(object):
 
     def triplet_loss(self, f_q, f_p, f_n, margin=0.2):
         # compute loss
-        d_p = tf.reduce_sum(tf.square(f_q - f_p), 1)
-        d_n = tf.reduce_sum(tf.square(f_q - f_n), 1)
-        triplet_loss = tf.reduce_mean(tf.maximum(0., margin + d_p - d_n))
+        d_p = tf.norm(f_q - f_p, axis=1)
+        d_n = tf.norm(f_q - f_n, axis=1)
+        loss = tf.reduce_mean(tf.maximum(margin + d_p - d_n, 0.0), 0)
         # logging
         d_p = tf.reduce_mean(d_p)
         d_n = tf.reduce_mean(d_n)
         tf.summary.scalar("D_p", d_p)
         tf.summary.scalar("D_n", d_n)
-        tf.summary.scalar("Loss", triplet_loss)
-        return triplet_loss, d_p, d_n
+        tf.summary.scalar("Loss", loss)
+        return loss, d_p, d_n
 
     def save(self, ckpt_dir, step):
         model_name = "TripNet.model"
