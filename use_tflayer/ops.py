@@ -3,40 +3,44 @@ import numpy as np
 import cv2
 import os
 
-def conv2d(x, W, name=None):
-    """conv2d returns a 2d convolution layer with full stride."""
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME', name=name)
 
 
-def max_pool_4x4(x, name=None):
-    """max_pool_2x2 downsamples a feature map by 2X."""
-    return tf.nn.max_pool(x, ksize=[1, 4, 4, 1],
-                          strides=[1, 4, 4, 1], padding='SAME', name=name)
+def load_384_256_img(data_dir, path):
+    img = cv2.imread(os.path.join(data_dir, path))
+    img = cv2.resize(img, (256, 384), cv2.INTER_CUBIC)
+    img = np.reshape(img, (1, -1))
+    # img = np.reshape(mean_sub(img), (1, -1))
+    return img
 
 
-def weight_variable(shape, name=None):
-    """weight_variable generates a weight variable of a given shape."""
-    initial = tf.truncated_normal(shape, stddev=0.2)
-    return tf.Variable(initial, name=name)
+def load_384_256_img_(path):
+    img = cv2.imread(os.path.join(path))
+    img = cv2.resize(img, (256, 384), cv2.INTER_CUBIC)
+    img = np.reshape(mean_sub(img), (1, -1))
+    return img
 
 
-def bias_variable(shape, name=None):
-    """bias_variable generates a bias variable of a given shape."""
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial, name=name)
+def mean_sub(img):
+    for i in range(3):
+        ch = img[:, :, i]
+        img[:, :, i] = (ch - np.mean(ch)) / np.std(ch)
+    return img
 
 
-def batch_norm(x, name, reuse=False, is_training=True, trainable=True):
-    return tf.contrib.layers.batch_norm(x,
-                                        decay=0.9,
-                                        epsilon=1e-5,
-                                        scale=True,
-                                        updates_collections=None,
-                                        is_training=is_training,
-                                        trainable=trainable,
-                                        reuse=reuse,
-                                        scope=name)
+def get_batch(data_dir, dataset):
+    img_q = img_p = img_n = np.empty((0, 294912))
+    for path in dataset:
+        img_q = np.append(img_q, load_384_256_img(data_dir, path[0]), axis=0)
+        img_p = np.append(img_p, load_384_256_img(data_dir, path[1]), axis=0)
+        img_n = np.append(img_n, load_384_256_img(data_dir, path[2]), axis=0)
+    return img_q, img_p, img_n
 
+def make_log_dir(self, log_dir, pid):
+        dir = os.path.join(log_dir, pid)
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        os.mkdir(dir)
+        return dir
 
 def generate_sprite(files, save_dir="projector", width=64, height=96, max_size=8192):
     h_num = np.int(np.ceil(np.sqrt(len(files))))
